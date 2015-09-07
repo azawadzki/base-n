@@ -1,8 +1,6 @@
 base-n provides encoding/decoding support for BaseX encoding schemes accessible through a standard STL-like iterator interface. Standard Base16, Base32, and Base64 are available out-of-the-box. Adding or modifying custom schemes is supported.
 
-#Usage overview
-
-# Introduction #
+# Usage overview #
 
 base-n is a small, single-header library which provides standard Base16, Base32, Base64, and custom Base-N encoding support.
 
