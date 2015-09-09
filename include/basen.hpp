@@ -129,9 +129,9 @@ struct b64_conversion_traits
         } else if (c >= '0' && c <= '9') {
             return c - '0' + alph_len * 2;
         } else if (c == '+') {
-            return c - '+' + alph_len * 2 + 1;
+            return c - '+' + alph_len * 2 + 10;
         } else if (c == '/') {
-            return c - '/' + alph_len * 2 + 2;
+            return c - '/' + alph_len * 2 + 11;
         }
         return -1;
     }
@@ -209,7 +209,11 @@ void encode(Iter1 start, Iter1 end, Iter2 out)
         } else {
             // encode value which is made from bits spanning across byte
             // boundary
-            char v = extract_overlapping_bits(backlog, *iter, start_bit, ConversionTraits::group_length());
+            char v;
+            if (iter == end)
+                 v = extract_overlapping_bits(backlog, 0, start_bit, ConversionTraits::group_length());
+            else
+                 v = extract_overlapping_bits(backlog, *iter, start_bit, ConversionTraits::group_length());
             *out++ = ConversionTraits::encode(v);
             has_backlog = false;
             start_bit = (start_bit + ConversionTraits::group_length()) % 8;
