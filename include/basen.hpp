@@ -52,8 +52,27 @@ void decode_b64(Iter1 start, Iter1 end, Iter2 out);
 namespace impl
 {
 
-char extract_partial_bits(char value, unsigned int start_bit, unsigned int bits_count);
-char extract_overlapping_bits(char previous, char next, unsigned int start_bit, unsigned int bits_count);
+namespace {
+
+char extract_partial_bits(char value, unsigned int start_bit, unsigned int bits_count)
+{
+    assert(start_bit + bits_count < 8);
+    char t1 = value >> (8 - bits_count - start_bit);
+    char t2 = t1 & ~(-1 << bits_count);
+    return t2;
+}
+
+char extract_overlapping_bits(char previous, char next, unsigned int start_bit, unsigned int bits_count)
+{
+    assert(start_bit + bits_count < 16);
+    int bits_count_in_previous = 8 - start_bit;
+    int bits_count_in_next = bits_count - bits_count_in_previous;
+    char t1 = previous << bits_count_in_next;
+    char t2 = next >> (8 - bits_count_in_next) & ~(-1 << bits_count_in_next) ;
+    return (t1 | t2) & ~(-1 << bits_count);
+}
+
+}
 
 struct b16_conversion_traits
 {
@@ -219,24 +238,6 @@ void encode(Iter1 start, Iter1 end, Iter2 out)
             start_bit = (start_bit + ConversionTraits::group_length()) % 8;
         }
     }
-}
-
-char extract_partial_bits(char value, unsigned int start_bit, unsigned int bits_count)
-{
-    assert(start_bit + bits_count < 8);
-    char t1 = value >> (8 - bits_count - start_bit);
-    char t2 = t1 & ~(-1 << bits_count);
-    return t2;
-}
-
-char extract_overlapping_bits(char previous, char next, unsigned int start_bit, unsigned int bits_count)
-{
-    assert(start_bit + bits_count < 16);
-    int bits_count_in_previous = 8 - start_bit;
-    int bits_count_in_next = bits_count - bits_count_in_previous;
-    char t1 = previous << bits_count_in_next;
-    char t2 = next >> (8 - bits_count_in_next) & ~(-1 << bits_count_in_next) ;
-    return (t1 | t2) & ~(-1 << bits_count);
 }
 
 } // impl
