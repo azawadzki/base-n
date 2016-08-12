@@ -58,7 +58,7 @@ char extract_partial_bits(char value, unsigned int start_bit, unsigned int bits_
 {
     assert(start_bit + bits_count < 8);
     char t1 = value >> (8 - bits_count - start_bit);
-    char t2 = t1 & ~(-1 << bits_count);
+    char t2 = t1 & ~(0xFFFFFFFFFFFFFFFF << bits_count);
     return t2;
 }
 
@@ -68,8 +68,8 @@ char extract_overlapping_bits(char previous, char next, unsigned int start_bit, 
     int bits_count_in_previous = 8 - start_bit;
     int bits_count_in_next = bits_count - bits_count_in_previous;
     char t1 = previous << bits_count_in_next;
-    char t2 = next >> (8 - bits_count_in_next) & ~(-1 << bits_count_in_next) ;
-    return (t1 | t2) & ~(-1 << bits_count);
+    char t2 = next >> (8 - bits_count_in_next) & ~(0xFFFFFFFFFFFFFFFF << bits_count_in_next) ;
+    return (t1 | t2) & ~(0xFFFFFFFFFFFFFFFF << bits_count);
 }
 
 }
