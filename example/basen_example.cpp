@@ -70,7 +70,7 @@ int main()
                return 3;
             }
 
-            static char encode(int index)
+            static char encode(unsigned int index)
             {
                 const char* const dictionary = "01234567";
                 assert(index < strlen(dictionary));

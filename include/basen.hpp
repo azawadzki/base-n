@@ -52,13 +52,17 @@ void decode_b64(Iter1 start, Iter1 end, Iter2 out);
 namespace impl
 {
 
+const int ERROR = -1;
+
 namespace {
 
 char extract_partial_bits(char value, unsigned int start_bit, unsigned int bits_count)
 {
     assert(start_bit + bits_count < 8);
+    // shift extracted bits to the beginning of the byte
     char t1 = value >> (8 - bits_count - start_bit);
-    char t2 = t1 & ~(-1 << bits_count);
+    // mask out bits on the left
+    char t2 = t1 & ~(-1U << bits_count);
     return t2;
 }
 
@@ -68,8 +72,8 @@ char extract_overlapping_bits(char previous, char next, unsigned int start_bit, 
     int bits_count_in_previous = 8 - start_bit;
     int bits_count_in_next = bits_count - bits_count_in_previous;
     char t1 = previous << bits_count_in_next;
-    char t2 = next >> (8 - bits_count_in_next) & ~(-1 << bits_count_in_next) ;
-    return (t1 | t2) & ~(-1 << bits_count);
+    char t2 = next >> (8 - bits_count_in_next) & ~(-1U << bits_count_in_next) ;
+    return (t1 | t2) & ~(-1U << bits_count);
 }
 
 }
@@ -95,7 +99,7 @@ struct b16_conversion_traits
         } else if (c >= 'A' && c <= 'F') {
             return c - 'A' + 10;
         }
-        return -1;
+        return ERROR;
     }
 };
 
@@ -120,7 +124,7 @@ struct b32_conversion_traits
         } else if (c >= '2' && c <= '7') {
             return c - '2' + 26;
         }
-        return -1;
+        return ERROR;
     }
 };
 
@@ -152,7 +156,7 @@ struct b64_conversion_traits
         } else if (c == '/') {
             return c - '/' + alph_len * 2 + 11;
         }
-        return -1;
+        return ERROR;
     }
 };
 
@@ -169,7 +173,7 @@ void decode(Iter1 start, Iter1 end, Iter2 out)
             continue;
         }
         char value = ConversionTraits::decode(*iter);
-        if (value == -1) {
+        if (value == ERROR) {
             // malformed data, but let's go on...
             ++iter;
             continue;
@@ -186,9 +190,9 @@ void decode(Iter1 start, Iter1 end, Iter2 out)
                 output_current_bit = 0;
             }
         } else {
-            // the value span across current and next byte
+            // the value spans across the current and the next byte
             int bits_in_next_byte = ConversionTraits::group_length() - bits_in_current_byte;
-            // fill current byte and flush it to our output
+            // fill the current byte and flush it to our output
             buffer |= value >> bits_in_next_byte;
             *out++ = buffer;
             buffer = 0;
