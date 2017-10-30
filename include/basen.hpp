@@ -52,28 +52,28 @@ void decode_b64(Iter1 start, Iter1 end, Iter2 out);
 namespace impl
 {
 
-const int ERROR = -1;
+const int Error = -1;
 
 namespace {
 
-char extract_partial_bits(char value, unsigned int start_bit, unsigned int bits_count)
+char extract_partial_bits(char value, size_t start_bit, size_t bits_count)
 {
     assert(start_bit + bits_count < 8);
     // shift extracted bits to the beginning of the byte
     char t1 = value >> (8 - bits_count - start_bit);
     // mask out bits on the left
-    char t2 = t1 & ~(-1U << bits_count);
+    char t2 = t1 & ~(0xff << bits_count);
     return t2;
 }
 
-char extract_overlapping_bits(char previous, char next, unsigned int start_bit, unsigned int bits_count)
+char extract_overlapping_bits(char previous, char next, size_t start_bit, size_t bits_count)
 {
     assert(start_bit + bits_count < 16);
-    int bits_count_in_previous = 8 - start_bit;
-    int bits_count_in_next = bits_count - bits_count_in_previous;
+    size_t bits_count_in_previous = 8 - start_bit;
+    size_t bits_count_in_next = bits_count - bits_count_in_previous;
     char t1 = previous << bits_count_in_next;
-    char t2 = next >> (8 - bits_count_in_next) & ~(-1U << bits_count_in_next) ;
-    return (t1 | t2) & ~(-1U << bits_count);
+    char t2 = next >> (8 - bits_count_in_next) & ~(0xff << bits_count_in_next) ;
+    return (t1 | t2) & ~(0xff << bits_count);
 }
 
 }
@@ -99,7 +99,7 @@ struct b16_conversion_traits
         } else if (c >= 'A' && c <= 'F') {
             return c - 'A' + 10;
         }
-        return ERROR;
+        return Error;
     }
 };
 
@@ -124,7 +124,7 @@ struct b32_conversion_traits
         } else if (c >= '2' && c <= '7') {
             return c - '2' + 26;
         }
-        return ERROR;
+        return Error;
     }
 };
 
@@ -156,7 +156,7 @@ struct b64_conversion_traits
         } else if (c == '/') {
             return c - '/' + alph_len * 2 + 11;
         }
-        return ERROR;
+        return Error;
     }
 };
 
@@ -164,7 +164,7 @@ template<class ConversionTraits, class Iter1, class Iter2>
 void decode(Iter1 start, Iter1 end, Iter2 out)
 {
     Iter1 iter = start;
-    int output_current_bit = 0;
+    size_t output_current_bit = 0;
     char buffer = 0;
 
     while (iter != end) {
@@ -173,12 +173,12 @@ void decode(Iter1 start, Iter1 end, Iter2 out)
             continue;
         }
         char value = ConversionTraits::decode(*iter);
-        if (value == ERROR) {
+        if (value == Error) {
             // malformed data, but let's go on...
             ++iter;
             continue;
         }
-        unsigned int bits_in_current_byte = std::min<int>(output_current_bit + ConversionTraits::group_length(), 8) - output_current_bit;
+        size_t bits_in_current_byte = std::min<size_t>(output_current_bit + ConversionTraits::group_length(), 8) - output_current_bit;
         if (bits_in_current_byte == ConversionTraits::group_length()) {
             // the value fits within current byte, so we can extract it directly
             buffer |= value << (8 - output_current_bit - ConversionTraits::group_length());
@@ -191,7 +191,7 @@ void decode(Iter1 start, Iter1 end, Iter2 out)
             }
         } else {
             // the value spans across the current and the next byte
-            int bits_in_next_byte = ConversionTraits::group_length() - bits_in_current_byte;
+            size_t bits_in_next_byte = ConversionTraits::group_length() - bits_in_current_byte;
             // fill the current byte and flush it to our output
             buffer |= value >> bits_in_next_byte;
             *out++ = buffer;
@@ -209,7 +209,7 @@ template<class ConversionTraits, class Iter1, class Iter2>
 void encode(Iter1 start, Iter1 end, Iter2 out)
 {
     Iter1 iter = start;
-    int start_bit = 0;
+    size_t start_bit = 0;
     bool has_backlog = false;
     char backlog = 0;
 
@@ -287,4 +287,3 @@ void decode_b64(Iter1 start, Iter1 end, Iter2 out)
 } // bn
 
 #endif // BASEN_HPP
-
