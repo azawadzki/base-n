@@ -208,6 +208,8 @@ void decode(Iter1 start, Iter1 end, Iter2 out)
 template<class ConversionTraits, class Iter1, class Iter2>
 void encode(Iter1 start, Iter1 end, Iter2 out)
 {
+    static_assert(sizeof(*start) == sizeof(char), "only char-size input supported");
+
     Iter1 iter = start;
     size_t start_bit = 0;
     bool has_backlog = false;
