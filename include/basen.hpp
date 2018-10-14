@@ -1,17 +1,17 @@
 /**
  * base-n, 1.0
  * Copyright (C) 2012 Andrzej Zawadzki (azawadzki@gmail.com)
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -87,7 +87,7 @@ struct b16_conversion_traits
 
     static char encode(unsigned int index)
     {
-        const char* const dictionary = "0123456789ABCDEF";
+        static const char* const dictionary = "0123456789ABCDEF";
         assert(index < strlen(dictionary));
         return dictionary[index];
     }
@@ -112,7 +112,7 @@ struct b32_conversion_traits
 
     static char encode(unsigned int index)
     {
-        const char * dictionary = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+        static const char * dictionary = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
         assert(index < strlen(dictionary));
         return dictionary[index];
     }
@@ -137,7 +137,7 @@ struct b64_conversion_traits
 
     static char encode(unsigned int index)
     {
-        const char* const dictionary = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        static const char* const dictionary = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         assert(index < strlen(dictionary));
         return dictionary[index];
     }
@@ -208,7 +208,11 @@ void decode(Iter1 start, Iter1 end, Iter2 out)
 template<class ConversionTraits, class Iter1, class Iter2>
 void encode(Iter1 start, Iter1 end, Iter2 out)
 {
+#if __cplusplus >= 201103 || (defined(_MSC_VER) && _MSC_VER > 1700)
     static_assert(sizeof(*start) == sizeof(char), "only char-size input supported");
+#else // compatibility with older C++ without static assertions
+    assert(sizeof(*start) == sizeof(char) && "only char-size input supported");
+#endif
 
     Iter1 iter = start;
     size_t start_bit = 0;
