@@ -31,24 +31,6 @@
 namespace bn
 {
 
-template<class Iter1, class Iter2>
-void encode_b16(Iter1 start, Iter1 end, Iter2 out);
-
-template<class Iter1, class Iter2>
-void encode_b32(Iter1 start, Iter1 end, Iter2 out);
-
-template<class Iter1, class Iter2>
-void encode_b64(Iter1 start, Iter1 end, Iter2 out);
-
-template<class Iter1, class Iter2>
-void decode_b16(Iter1 start, Iter1 end, Iter2 out);
-
-template<class Iter1, class Iter2>
-void decode_b32(Iter1 start, Iter1 end, Iter2 out);
-
-template<class Iter1, class Iter2>
-void decode_b64(Iter1 start, Iter1 end, Iter2 out);
-
 namespace impl
 {
 
@@ -78,7 +60,11 @@ char extract_overlapping_bits(char previous, char next, size_t start_bit, size_t
 
 }
 
-struct b16_conversion_traits
+template<int nb> struct conversion_traits_b
+{ /* Specialize this class to define encodings */ };
+
+template<>
+struct conversion_traits_b<16>
 {
     static size_t group_length()
     {
@@ -99,11 +85,12 @@ struct b16_conversion_traits
         } else if (c >= 'A' && c <= 'F') {
             return c - 'A' + 10;
         }
-        return Error;
+        return impl::Error;
     }
 };
 
-struct b32_conversion_traits
+template<>
+struct conversion_traits_b<32>
 {
     static size_t group_length()
     {
@@ -124,11 +111,12 @@ struct b32_conversion_traits
         } else if (c >= '2' && c <= '7') {
             return c - '2' + 26;
         }
-        return Error;
+        return impl::Error;
     }
 };
 
-struct b64_conversion_traits
+template<>
+struct conversion_traits_b<64>
 {
     static size_t group_length()
     {
@@ -156,11 +144,13 @@ struct b64_conversion_traits
         } else if (c == '/') {
             return c - '/' + alph_len * 2 + 11;
         }
-        return Error;
+        return impl::Error;
     }
 };
 
-template<class ConversionTraits, class Iter1, class Iter2>
+} // impl
+
+template<int nb, class Iter1, class Iter2>
 void decode(Iter1 start, Iter1 end, Iter2 out)
 {
     Iter1 iter = start;
@@ -172,17 +162,17 @@ void decode(Iter1 start, Iter1 end, Iter2 out)
             ++iter;
             continue;
         }
-        char value = ConversionTraits::decode(*iter);
-        if (value == Error) {
+        char value = impl::conversion_traits_b<nb>::decode(*iter);
+        if (value == impl::Error) {
             // malformed data, but let's go on...
             ++iter;
             continue;
         }
-        size_t bits_in_current_byte = std::min<size_t>(output_current_bit + ConversionTraits::group_length(), 8) - output_current_bit;
-        if (bits_in_current_byte == ConversionTraits::group_length()) {
+        size_t bits_in_current_byte = std::min<size_t>(output_current_bit + impl::conversion_traits_b<nb>::group_length(), 8) - output_current_bit;
+        if (bits_in_current_byte == impl::conversion_traits_b<nb>::group_length()) {
             // the value fits within current byte, so we can extract it directly
-            buffer |= value << (8 - output_current_bit - ConversionTraits::group_length());
-            output_current_bit += ConversionTraits::group_length();
+            buffer |= value << (8 - output_current_bit - impl::conversion_traits_b<nb>::group_length());
+            output_current_bit += impl::conversion_traits_b<nb>::group_length();
             // check if we filled up current byte completely; in such case we flush output and continue
             if (output_current_bit == 8) {
                 *out++ = buffer;
@@ -191,7 +181,7 @@ void decode(Iter1 start, Iter1 end, Iter2 out)
             }
         } else {
             // the value spans across the current and the next byte
-            size_t bits_in_next_byte = ConversionTraits::group_length() - bits_in_current_byte;
+            size_t bits_in_next_byte = impl::conversion_traits_b<nb>::group_length() - bits_in_current_byte;
             // fill the current byte and flush it to our output
             buffer |= value >> bits_in_next_byte;
             *out++ = buffer;
@@ -205,7 +195,7 @@ void decode(Iter1 start, Iter1 end, Iter2 out)
     }
 }
 
-template<class ConversionTraits, class Iter1, class Iter2>
+template<int nb, class Iter1, class Iter2>
 void encode(Iter1 start, Iter1 end, Iter2 out)
 {
 #if __cplusplus >= 201103 || (defined(_MSC_VER) && _MSC_VER > 1700)
@@ -221,14 +211,14 @@ void encode(Iter1 start, Iter1 end, Iter2 out)
 
     while (has_backlog || iter != end) {
         if (!has_backlog) {
-            if (start_bit + ConversionTraits::group_length() < 8) {
+            if (start_bit + impl::conversion_traits_b<nb>::group_length() < 8) {
                 // the value fits within single byte, so we can extract it
                 // directly
-                char v = extract_partial_bits(*iter, start_bit, ConversionTraits::group_length());
-                *out++ = ConversionTraits::encode(v);
-                // since we know that start_bit + ConversionTraits::group_length() < 8 we don't need to go
+                char v = impl::extract_partial_bits(*iter, start_bit, impl::conversion_traits_b<nb>::group_length());
+                *out++ = impl::conversion_traits_b<nb>::encode(v);
+                // since we know that start_bit + impl::conversion_traits_b<nb>::group_length() < 8 we don't need to go
                 // to the next byte
-                start_bit += ConversionTraits::group_length();
+                start_bit += impl::conversion_traits_b<nb>::group_length();
             } else {
                 // our bits are spanning across byte border; we need to keep the
                 // starting point and move over to next byte.
@@ -240,54 +230,14 @@ void encode(Iter1 start, Iter1 end, Iter2 out)
             // boundary
             char v;
             if (iter == end)
-                 v = extract_overlapping_bits(backlog, 0, start_bit, ConversionTraits::group_length());
+                 v = impl::extract_overlapping_bits(backlog, 0, start_bit, impl::conversion_traits_b<nb>::group_length());
             else
-                 v = extract_overlapping_bits(backlog, *iter, start_bit, ConversionTraits::group_length());
-            *out++ = ConversionTraits::encode(v);
+                 v = impl::extract_overlapping_bits(backlog, *iter, start_bit, impl::conversion_traits_b<nb>::group_length());
+            *out++ = impl::conversion_traits_b<nb>::encode(v);
             has_backlog = false;
-            start_bit = (start_bit + ConversionTraits::group_length()) % 8;
+            start_bit = (start_bit + impl::conversion_traits_b<nb>::group_length()) % 8;
         }
     }
-}
-
-} // impl
-
-using namespace bn::impl;
-
-template<class Iter1, class Iter2>
-void encode_b16(Iter1 start, Iter1 end, Iter2 out)
-{
-    encode<b16_conversion_traits>(start, end, out);
-}
-
-template<class Iter1, class Iter2>
-void encode_b32(Iter1 start, Iter1 end, Iter2 out)
-{
-    encode<b32_conversion_traits>(start, end, out);
-}
-
-template<class Iter1, class Iter2>
-void encode_b64(Iter1 start, Iter1 end, Iter2 out)
-{
-    encode<b64_conversion_traits>(start, end, out);
-}
-
-template<class Iter1, class Iter2>
-void decode_b16(Iter1 start, Iter1 end, Iter2 out)
-{
-    decode<b16_conversion_traits>(start, end, out);
-}
-
-template<class Iter1, class Iter2>
-void decode_b32(Iter1 start, Iter1 end, Iter2 out)
-{
-    decode<b32_conversion_traits>(start, end, out);
-}
-
-template<class Iter1, class Iter2>
-void decode_b64(Iter1 start, Iter1 end, Iter2 out)
-{
-    decode<b64_conversion_traits>(start, end, out);
 }
 
 } // bn
