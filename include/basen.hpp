@@ -56,7 +56,7 @@ const int Error = -1;
 
 namespace {
 
-char extract_partial_bits(char value, size_t start_bit, size_t bits_count)
+inline char extract_partial_bits(char value, size_t start_bit, size_t bits_count)
 {
     assert(start_bit + bits_count < 8);
     // shift extracted bits to the beginning of the byte
@@ -66,7 +66,7 @@ char extract_partial_bits(char value, size_t start_bit, size_t bits_count)
     return t2;
 }
 
-char extract_overlapping_bits(char previous, char next, size_t start_bit, size_t bits_count)
+inline char extract_overlapping_bits(char previous, char next, size_t start_bit, size_t bits_count)
 {
     assert(start_bit + bits_count < 16);
     size_t bits_count_in_previous = 8 - start_bit;
