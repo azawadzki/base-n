@@ -52,7 +52,7 @@ void decode_b64(Iter1 start, Iter1 end, Iter2 out);
 namespace impl
 {
 
-const int Error = -1;
+const char Error = -1;
 
 namespace {
 
