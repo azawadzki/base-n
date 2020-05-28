@@ -71,8 +71,8 @@ inline char extract_overlapping_bits(char previous, char next, size_t start_bit,
     assert(start_bit + bits_count < 16);
     size_t bits_count_in_previous = 8 - start_bit;
     size_t bits_count_in_next = bits_count - bits_count_in_previous;
-    char t1 = previous << bits_count_in_next;
-    char t2 = next >> (8 - bits_count_in_next) & ~(0xff << bits_count_in_next) ;
+    char t1 = static_cast<char>(previous << bits_count_in_next);
+    char t2 = next >> (8 - bits_count_in_next) & ~(0xff << bits_count_in_next);
     return (t1 | t2) & ~(0xff << bits_count);
 }
 
