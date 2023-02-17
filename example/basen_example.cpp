@@ -57,7 +57,7 @@ int main()
             "IHNpbmd1bGFyIHBhc3Npb24gZnJvbS@BvdGhlciBhbmltYWxzLCB3aGljaCBpcyBhIGx1c3Qgb2Yg\n"
             " dGhlIG1(pbmQsIHRoYXQgYnkgYSBwZXJzZXZlcmFuY2Ugb2YgZGVsaWdodCBpbiB0aGUgY29udGlu\n"
             "\rdWVkIGFuZCBpbmRlZmF0aWdhY*mxlIGdlbmVyYXRpb24gb2Yga25vd2xlZGdlLCBleGNlZWRzIHRo\n"
-            "ZSBzaG9ydCB2ZWhlbWVuY2Ugb2YgYW55IGNhcm5hbCBwbGVhc3VyZS4";
+            "ZSBzaG9ydCB2ZWhlbWVuY2Ugb2YgYW55IGNhcm5hbCBwbGVhc3VyZS4=";
         bn::decode_b64(encoded.begin(), encoded.end(), ostream_iterator<char>(cout, ""));
         cout << endl;
     }
@@ -82,6 +82,11 @@ int main()
                 if (c >= '0' && c <= '7') {
                     return c - '0';
                 }
+                return -1;
+            }
+
+            static char padding()
+            {
                 return -1;
             }
         };

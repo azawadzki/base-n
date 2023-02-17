@@ -101,6 +101,11 @@ struct b16_conversion_traits
         }
         return Error;
     }
+
+    static char padding()
+    {
+        return Error;
+    }
 };
 
 struct b32_conversion_traits
@@ -125,6 +130,11 @@ struct b32_conversion_traits
             return c - '2' + 26;
         }
         return Error;
+    }
+
+    static char padding()
+    {
+        return '=';
     }
 };
 
@@ -157,6 +167,11 @@ struct b64_conversion_traits
             return c - '/' + alph_len * 2 + 11;
         }
         return Error;
+    }
+
+    static char padding()
+    {
+        return '=';
     }
 };
 
@@ -213,6 +228,7 @@ void encode(Iter1 start, Iter1 end, Iter2 out)
 #else // compatibility with older C++ without static assertions
     assert(sizeof(*start) == sizeof(char) && "only char-size input supported");
 #endif
+    assert(ConversionTraits::decode(ConversionTraits::padding()) == Error && "padding char must not in dictionary");
 
     Iter1 iter = start;
     size_t start_bit = 0;
@@ -245,6 +261,12 @@ void encode(Iter1 start, Iter1 end, Iter2 out)
                  v = extract_overlapping_bits(backlog, *iter, start_bit, ConversionTraits::group_length());
             *out++ = ConversionTraits::encode(v);
             has_backlog = false;
+            start_bit = (start_bit + ConversionTraits::group_length()) % 8;
+        }
+    }
+    if (ConversionTraits::padding() != Error) {
+        while (start_bit) {
+            *out++ = ConversionTraits::padding();
             start_bit = (start_bit + ConversionTraits::group_length()) % 8;
         }
     }

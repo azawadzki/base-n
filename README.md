@@ -59,6 +59,11 @@ struct b8_custom
                 }
                 return -1;
         }
+
+        static char padding()
+        {
+                return -1;
+        }
 };
 ...
 string encoded;
